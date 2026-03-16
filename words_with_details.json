@@ -1,0 +1,42 @@
+{
+  "campus": {
+    "phonetic": "/ˈkæm.pəs/",
+    "meaning": "校园；校区",
+    "example": "She spends most of her time on campus studying and attending classes.",
+    "example_cn": "她大部分时间都在校园里学习和上课。",
+    "part_of_speech": "n. 名词",
+    "difficulty": 2
+  },
+  "good": {
+    "phonetic": "/ɡʊd/",
+    "meaning": "好的；良好的",
+    "example": "She is a good student who always finishes her homework on time.",
+    "example_cn": "她是一个好学生，总是按时完成作业。",
+    "part_of_speech": "adj. 形容词",
+    "difficulty": 1
+  },
+  "chair": {
+    "phonetic": "/tʃɪər/",
+    "meaning": "椅子；主席；（会议）主持人",
+    "example": "She sat down in the chair and began reading.",
+    "example_cn": "她坐到椅子上开始阅读。",
+    "part_of_speech": "n. 名词",
+    "difficulty": 1
+  },
+  "paper": {
+    "phonetic": "/ˈpeɪ.pər/",
+    "meaning": "纸；论文；报纸",
+    "example": "She wrote her research paper in two weeks.",
+    "example_cn": "她在两周内完成了她的研究论文。",
+    "part_of_speech": "n. 名词",
+    "difficulty": 2
+  },
+  "code": {
+    "phonetic": "/koʊd/",
+    "meaning": "代码；准则；密码",
+    "example": "The programmer wrote a new code to fix the bug.",
+    "example_cn": "这位程序员编写了一段新代码来修复这个漏洞。",
+    "part_of_speech": "n. 名词",
+    "difficulty": 2
+  }
+}
