@@ -4,6 +4,7 @@ import pandas as pd
 from datetime import datetime
 import random
 import streamlit.components.v1 as components  # 新增：用于渲染语音播放按钮
+import scenario_learning  # 新增：导入我们刚写的场景模块
 
 # ==========================================
 # 页面配置
@@ -192,7 +193,9 @@ st.markdown("""
 # 侧边栏导航与控制面板
 # ==========================================
 st.sidebar.title("📚 导航菜单")
-page = st.sidebar.radio("选择功能", ["📅 今日需学", "📖 单词大厅", "🎯 今日测试"])
+page = st.sidebar.radio(
+"选择功能", ["📅 今日需学", "📖 单词大厅", "🎯 今日测试", "🗣️ 场景实战"
+])
 st.sidebar.markdown("---")
 
 stats = get_db_stats()
@@ -562,3 +565,9 @@ elif page == "🎯 今日测试":
                     else:
                         st.session_state['test_completed'] = True
                     st.rerun()
+# ==========================================
+# 页面 3: 场景实战 (AI 私教)
+# ==========================================
+elif page == "🗣️ 场景实战":
+    # 直接调用新模块的方法，并把 app.py 里的语音播报功能传给它复用
+    scenario_learning.render_page(play_audio)
