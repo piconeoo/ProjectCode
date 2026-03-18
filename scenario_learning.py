@@ -52,6 +52,7 @@ def generate_scenario_vocab(scenario):
 def render_voice_call_room(scenario, vocab_dict):
     """
     核心黑科技：嵌入式 Web 语音通话舱
+    利用原生 JS 实现真正的“无限循环实时语音通话”，自带断线重连和身份锁。
     """
     all_items = vocab_dict.get('words', []) + vocab_dict.get('sentences', [])
     vocab_str = ", ".join([v['english'] for v in all_items])
@@ -113,14 +114,19 @@ def render_voice_call_room(scenario, vocab_dict):
         let isAIProcessing = false;
         let currentAction = ''; 
 
+        // 【核心修改】：重写底层身份锁 Prompt，彻底防止 AI 抢戏
         let history = [
-            {{"role": "system", "content": `你现在是一名专业的英语口语外教。场景：${{SCENARIO}}。你要扮演对应的服务人员/对方角色。
-            要求：
-            1. 每次只说1-2句短语，像真人一样简短自然！
-            2. 你要主动抛出问题，引导用户使用这些地道表达或词汇回答你：[${{VOCAB}}]。
-            3. 【重要命令】绝对不要在对话过程中纠正用户的语法或表达，也不要给出任何建议！即使他说错了、用了中式英语，你也要像真人一样强行理解并顺着剧情演下去。所有的纠错必须等到通话结束后再做！
-            4. 【重要命令】你的回复中绝对不要包含任何 Emoji 表情符号，纯文字即可。
-            现在，直接用一句英文开场白开始对话！`}}
+            {{"role": "system", "content": `你现在是一名专业的英语口语外教。场景：${{SCENARIO}}。
+            【身份锁】：你必须且**只能**扮演该场景下的接待方/服务人员（如餐厅服务员、海关签证官、店员等）。用户是你的**顾客/访客**。
+
+            执行要求：
+            1. 每次只说1-2句短语，像真人一样简短自然。
+            2. 【核心任务】：你要通过不断地提问或回应，引导顾客（用户）主动说出以下这些词汇和句子：[${{VOCAB}}]。
+            3. 【最高红线】：你绝对不可以抢走顾客的台词！上面括号里提供的目标句子是**属于用户的**，你坚决不能在你的回复中直接输出它们（例如：绝不能替用户说“我们迟到了”或“我要点单”等顾客才会说的话）。
+            4. 绝对不要在对话中纠正用户的语法或给出建议！即使他用了中式英语，你也要像真的服务员一样顺着剧情聊下去，纠错留在通话结束后。
+            5. 回复中禁止使用任何 Emoji 表情。
+
+            现在，请直接用一句符合你“服务人员”身份的英文开场白（如欢迎光临或询问需求）开始对话！`}}
         ];
 
         const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -313,7 +319,7 @@ def render_page(play_audio_func):
     if 'current_scenario' not in st.session_state:
         st.session_state['current_scenario'] = ""
     if 'scenario_vocab_index' not in st.session_state:
-        st.session_state['scenario_vocab_index'] = 0  # 分页索引
+        st.session_state['scenario_vocab_index'] = 0
 
     with st.container(border=True):
         scenario_input = st.text_input("📍 请输入你想练习的场景 (例如：在餐厅预订座位、在机场过海关)：")
@@ -324,13 +330,12 @@ def render_page(play_audio_func):
                     if vocab and (vocab.get('words') or vocab.get('sentences')):
                         st.session_state['scenario_vocab'] = vocab
                         st.session_state['current_scenario'] = scenario_input
-                        st.session_state['scenario_vocab_index'] = 0  # 生成新内容时，页码重置为第一页
+                        st.session_state['scenario_vocab_index'] = 0
                         st.rerun()
 
     if st.session_state['scenario_vocab']:
         vocab_data = st.session_state['scenario_vocab']
 
-        # 将单词和句子合并为一个统一的列表，并为它们打上标签以供渲染区分
         all_items = []
         for w in vocab_data.get('words', []):
             w['type_label'] = '📚 核心词汇'
@@ -339,7 +344,6 @@ def render_page(play_audio_func):
             s['type_label'] = '💬 实用短句'
             all_items.append(s)
 
-        # 分页逻辑
         total_items = len(all_items)
         items_per_page = 2
         total_pages = (total_items + items_per_page - 1) // items_per_page
@@ -347,7 +351,6 @@ def render_page(play_audio_func):
 
         st.markdown(f"### 💡 【{st.session_state['current_scenario']}】 实用表达包")
 
-        # 上下页控制栏
         col_prev, col_space, col_next = st.columns([1, 8, 1])
         with col_prev:
             if st.button("⬅️ 上一页"):
@@ -362,18 +365,15 @@ def render_page(play_audio_func):
                 st.session_state['scenario_vocab_index'] = (current_page + 1) if current_page < total_pages - 1 else 0
                 st.rerun()
 
-        # 切片提取当前页的 2 个项目
         start_idx = current_page * items_per_page
         end_idx = min(start_idx + items_per_page, total_items)
         page_items = all_items[start_idx:end_idx]
 
-        # 渲染卡片
         for item in page_items:
             with st.container(border=True):
                 st.markdown(f"##### {item['type_label']}")
                 col1, col2 = st.columns([10, 1])
                 with col1:
-                    # 单词/句子放大加粗显示
                     st.markdown(
                         f"<div style='font-size: 1.8rem; font-weight: bold; color: #2e86c1; margin-bottom: 10px;'>{item['english']}</div>",
                         unsafe_allow_html=True)
