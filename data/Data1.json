@@ -1,0 +1,34 @@
+{
+  "app_id": "app1",
+  "words": [
+    {
+      "chinese": "笔记本电脑",
+      "english": "laptop"
+    },
+    {
+      "chinese": "显示器",
+      "english": "monitor"
+    },
+    {
+      "chinese": "代码",
+      "english": "code"
+    },
+    {
+      "chinese": "桌子",
+      "english": "desk"
+    },
+    {
+      "chinese": "图书馆",
+      "english": "library"
+    },
+    {
+      "chinese": "天花板",
+      "english": "ceiling"
+    },
+    {
+      "chinese": "嵌入式灯",
+      "english": "recessed light"
+    }
+  ],
+  "timestamp": 1779225008918
+}

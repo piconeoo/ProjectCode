@@ -65,6 +65,16 @@ def init_database():
             FOREIGN KEY (word_id) REFERENCES words (id)
         )
         ''')
+
+        cursor.execute('''
+        CREATE TABLE IF NOT EXISTS scenes (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            scene TEXT NOT NULL,
+            source_app_id TEXT,
+            source_timestamp INTEGER UNIQUE,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+        ''')
         conn.commit()
         logger.info("数据库初始化完成")
         return True

@@ -1,8 +1,43 @@
 import streamlit as st
 import json
+import random
+import sqlite3
 from openai import OpenAI
 import re
 import streamlit.components.v1 as components
+
+DB_PATH = "E:/Polyu/GraduateDesign/ProjectCode/vocabulary.db"
+
+
+def ensure_scene_table(conn):
+    cursor = conn.cursor()
+    cursor.execute('''
+    CREATE TABLE IF NOT EXISTS scenes (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        scene TEXT NOT NULL,
+        source_app_id TEXT,
+        source_timestamp INTEGER UNIQUE,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    )
+    ''')
+    conn.commit()
+
+
+def fetch_today_scenes(db_path=DB_PATH):
+    conn = sqlite3.connect(db_path, check_same_thread=False)
+    conn.row_factory = sqlite3.Row
+    try:
+        ensure_scene_table(conn)
+        cursor = conn.cursor()
+        cursor.execute('''
+        SELECT id, scene, source_app_id, source_timestamp, created_at
+        FROM scenes
+        WHERE date(created_at) = date('now', 'localtime')
+        ORDER BY created_at DESC
+        ''')
+        return [dict(row) for row in cursor.fetchall()]
+    finally:
+        conn.close()
 
 # 初始化大模型客户端
 client = OpenAI(
@@ -308,6 +343,23 @@ def render_voice_call_room(scenario, vocab_dict):
     components.html(html_code, height=650, scrolling=True)
 
 
+def load_scenario_vocab(scenario):
+    scenario = (scenario or "").strip()
+    if not scenario:
+        st.warning("请先选择或输入一个场景。")
+        return
+
+    with st.spinner("AI 外教正在为你生成这个场景的实用表达..."):
+        vocab = generate_scenario_vocab(scenario)
+        if vocab and (vocab.get('words') or vocab.get('sentences')):
+            st.session_state['scenario_vocab'] = vocab
+            st.session_state['current_scenario'] = scenario
+            st.session_state['scenario_vocab_index'] = 0
+            st.rerun()
+        else:
+            st.error("没有生成可用的场景表达，请再试一次。")
+
+
 def render_page(play_audio_func):
     """渲染主页面"""
     st.title("🗣️ 场景实战 (AI 1v1 私教)")
@@ -321,17 +373,34 @@ def render_page(play_audio_func):
     if 'scenario_vocab_index' not in st.session_state:
         st.session_state['scenario_vocab_index'] = 0
 
+    today_scenes = fetch_today_scenes()
+    available_scene_names = [row['scene'] for row in today_scenes]
+    selected_ar_scene = st.session_state.get('selected_ar_scene', '')
+    if available_scene_names and selected_ar_scene not in available_scene_names:
+        st.session_state['selected_ar_scene'] = random.choice(available_scene_names)
+    elif not available_scene_names:
+        st.session_state['selected_ar_scene'] = ''
+
     with st.container(border=True):
-        scenario_input = st.text_input("📍 请输入你想练习的场景 (例如：在餐厅预订座位、在机场过海关)：")
-        if st.button("✨ 生成地道表达", type="primary"):
-            if scenario_input:
-                with st.spinner("AI 外教正在为你定制独家地道词汇与金句..."):
-                    vocab = generate_scenario_vocab(scenario_input)
-                    if vocab and (vocab.get('words') or vocab.get('sentences')):
-                        st.session_state['scenario_vocab'] = vocab
-                        st.session_state['current_scenario'] = scenario_input
-                        st.session_state['scenario_vocab_index'] = 0
-                        st.rerun()
+        if available_scene_names:
+            st.markdown("#### 今日 AR 场景")
+            st.info(f"推荐练习场景：{st.session_state['selected_ar_scene']}")
+
+            col_generate, col_random = st.columns([2, 1])
+            with col_generate:
+                if st.button("使用 AR 场景生成表达", type="primary", use_container_width=True):
+                    load_scenario_vocab(st.session_state['selected_ar_scene'])
+            with col_random:
+                if st.button("随机换一个", use_container_width=True):
+                    st.session_state['selected_ar_scene'] = random.choice(available_scene_names)
+                    st.rerun()
+        else:
+            st.info("今天还没有保存 AR 场景，你仍然可以手动输入想练习的场景。")
+
+        st.markdown("#### 手动练习")
+        scenario_input = st.text_input("请输入你想练习的其他场景：")
+        if st.button("生成手动场景表达", use_container_width=True):
+            load_scenario_vocab(scenario_input)
 
     if st.session_state['scenario_vocab']:
         vocab_data = st.session_state['scenario_vocab']
