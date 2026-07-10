@@ -16,7 +16,7 @@ logger = logging.getLogger(__name__)
 
 class WordImporter:
     def __init__(self, db_path="vocabulary.db"):
-        self.db_path = db_path
+        self.db_path = os.fspath(db_path)
         self.conn = None
 
     def connect(self):
@@ -42,6 +42,7 @@ class WordImporter:
             json_path: JSON文件路径
             update_existing: 是否更新已存在的单词
         """
+        json_path = os.fspath(json_path)
         print("=" * 60)
         print("单词学习系统 - 自动导入工具")
         print("=" * 60)

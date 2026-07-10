@@ -24,6 +24,7 @@ sys.modules.setdefault("streamlit.components.v1", components_v1_module)
 
 import AutoMonitor
 from AutoMonitor import ensure_scene_table, insert_scene_record
+from JsonImportToDataBase import WordImporter
 from scenario_learning import fetch_today_scenes
 
 
@@ -134,6 +135,37 @@ class SceneStorageTests(unittest.TestCase):
                 AutoMonitor.DB_PATH = original_db_path
                 AutoMonitor.SCENE_JSON_FILE_PATH = original_scene_json_path
                 AutoMonitor.LAST_SCENE_TS_FILE = original_scene_ts_path
+
+    def test_word_importer_accepts_path_objects(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            temp_path = Path(temp_dir)
+            db_path = temp_path / "test.db"
+            json_path = temp_path / "words.json"
+            json_path.write_text(
+                json.dumps(
+                    {
+                        "laptop": {
+                            "phonetic": "/lap.top/",
+                            "meaning": "notebook computer",
+                            "example": "I use a laptop for work.",
+                            "example_cn": "I use a laptop for work.",
+                            "part_of_speech": "n. noun",
+                            "difficulty": 2,
+                        }
+                    }
+                ),
+                encoding="utf-8",
+            )
+
+            importer = WordImporter(db_path=db_path)
+            with redirect_stdout(StringIO()):
+                success, message = importer.import_json_file(json_path, update_existing=True)
+
+            self.assertTrue(success, message)
+            conn = sqlite3.connect(db_path)
+            rows = conn.execute("SELECT word, meaning FROM words").fetchall()
+            conn.close()
+            self.assertEqual(rows, [("laptop", "notebook computer")])
 
 
 if __name__ == "__main__":
